@@ -1,6 +1,7 @@
 use anyhow::Context;
 use anyhow::{anyhow, Result};
 use log::{trace, Level};
+use remove_dir_all::remove_dir_all;
 use std::env;
 use std::ffi::CStr;
 use std::fs;
@@ -35,7 +36,7 @@ fn cache_path(target: &str) -> Result<PathBuf> {
 
 fn extract(exe_path: &Path, cache_path: &Path) -> Result<()> {
     if cache_path.exists() {
-        fs::remove_dir_all(cache_path)
+        remove_dir_all(cache_path)
             .with_context(|| format!("Failed to remove directory {}", cache_path.display()))?;
     }
     extractor::extract_to(exe_path, cache_path).with_context(|| {
