@@ -1,14 +1,11 @@
-extern crate flate2;
-extern crate memmem;
-extern crate tar;
-
-use self::flate2::read::GzDecoder;
-use self::memmem::{Searcher, TwoWaySearcher};
-use self::tar::Archive;
+use flate2::read::GzDecoder;
+use log::trace;
+use memmem::{Searcher, TwoWaySearcher};
 use std::fs::File;
 use std::io;
 use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::path::Path;
+use tar::Archive;
 
 struct FileSearcher<'a> {
     buf_reader: BufReader<File>,
@@ -36,7 +33,7 @@ impl<'a> Iterator for FileSearcher<'a> {
 
         match self.buf_reader.seek(SeekFrom::Start(self.offs as u64)) {
             Ok(_) => {}
-            Err(e) => return Some(Err(e))
+            Err(e) => return Some(Err(e)),
         }
 
         loop {
@@ -53,7 +50,7 @@ impl<'a> Iterator for FileSearcher<'a> {
                             self.offs += 1; // one past the match so we can try again if necessary
                             break;
                         }
-                        None => self.offs += n
+                        None => self.offs += n,
                     }
                 }
                 Err(e) => {
@@ -75,7 +72,10 @@ pub fn extract_to(src: &Path, dst: &Path) -> io::Result<()> {
     for result in searcher {
         let offs = result?;
         if extract_at_offset(src, offs, dst).is_ok() {
-            trace!("tarball found at offset {} was extracted successfully", offs);
+            trace!(
+                "tarball found at offset {} was extracted successfully",
+                offs
+            );
             found = true;
             break;
         }
@@ -84,7 +84,10 @@ pub fn extract_to(src: &Path, dst: &Path) -> io::Result<()> {
     if found {
         Ok(())
     } else {
-        Err(io::Error::new(io::ErrorKind::Other, "no tarball found inside binary"))
+        Err(io::Error::new(
+            io::ErrorKind::Other,
+            "no tarball found inside binary",
+        ))
     }
 }
 

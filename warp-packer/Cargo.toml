@@ -2,6 +2,7 @@
 name = "warp-packer"
 version = "0.3.0"
 authors = ["Diego Giagio <diego@giagio.com>"]
+edition = "2021"
 
 [dependencies]
 clap = "2.32.0"

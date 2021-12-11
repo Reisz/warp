@@ -1,28 +1,24 @@
-extern crate dirs;
-#[macro_use]
-extern crate log;
-extern crate simple_logger;
-
-use log::Level;
+use log::{trace, Level};
 use std::env;
 use std::error::Error;
-use std::ffi::*;
+use std::ffi::CStr;
 use std::fs;
 use std::io;
-use std::path::*;
+use std::path::{Path, PathBuf};
 use std::process;
 
-mod extractor;
 mod executor;
+mod extractor;
 
-static TARGET_FILE_NAME_BUF: &'static [u8] = b"tVQhhsFFlGGD3oWV4lEPST8I8FEPP54IM0q7daes4E1y3p2U2wlJRYmWmjPYfkhZ0PlT14Ls0j8fdDkoj33f2BlRJavLj3mWGibJsGt5uLAtrCDtvxikZ8UX2mQDCrgE\0";
+static TARGET_FILE_NAME_BUF: &[u8] = b"tVQhhsFFlGGD3oWV4lEPST8I8FEPP54IM0q7daes4E1y3p2U2wlJRYmWmjPYfkhZ0PlT14Ls0j8fdDkoj33f2BlRJavLj3mWGibJsGt5uLAtrCDtvxikZ8UX2mQDCrgE\0";
 
 fn target_file_name() -> &'static str {
-    let nul_pos = TARGET_FILE_NAME_BUF.iter()
+    let nul_pos = TARGET_FILE_NAME_BUF
+        .iter()
         .position(|elem| *elem == b'\0')
         .expect("TARGET_FILE_NAME_BUF has no NUL terminator");
 
-    let slice = &TARGET_FILE_NAME_BUF[..(nul_pos + 1)];
+    let slice = &TARGET_FILE_NAME_BUF[..=nul_pos];
     CStr::from_bytes_with_nul(slice)
         .expect("Can't convert TARGET_FILE_NAME_BUF slice to CStr")
         .to_str()
@@ -39,11 +35,11 @@ fn cache_path(target: &str) -> PathBuf {
 
 fn extract(exe_path: &Path, cache_path: &Path) -> io::Result<()> {
     fs::remove_dir_all(cache_path).ok();
-    extractor::extract_to(&exe_path, &cache_path)?;
+    extractor::extract_to(exe_path, cache_path)?;
     Ok(())
 }
 
-fn main() -> Result<(), Box<Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     if env::var("WARP_TRACE").is_ok() {
         simple_logger::init_with_level(Level::Trace)?;
     }
