@@ -1,9 +1,9 @@
+use anyhow::Context;
+use anyhow::{anyhow, Result};
 use log::{trace, Level};
 use std::env;
-use std::error::Error;
 use std::ffi::CStr;
 use std::fs;
-use std::io;
 use std::path::{Path, PathBuf};
 use std::process;
 
@@ -25,28 +25,36 @@ fn target_file_name() -> &'static str {
         .expect("Can't convert TARGET_FILE_NAME_BUF CStr to str")
 }
 
-fn cache_path(target: &str) -> PathBuf {
-    dirs::data_local_dir()
-        .expect("No data local dir found")
+fn cache_path(target: &str) -> Result<PathBuf> {
+    Ok(dirs::data_local_dir()
+        .ok_or_else(|| anyhow!("No data local dir found"))?
         .join("warp")
         .join("packages")
-        .join(target)
+        .join(target))
 }
 
-fn extract(exe_path: &Path, cache_path: &Path) -> io::Result<()> {
-    fs::remove_dir_all(cache_path).ok();
-    extractor::extract_to(exe_path, cache_path)?;
-    Ok(())
+fn extract(exe_path: &Path, cache_path: &Path) -> Result<()> {
+    if cache_path.exists() {
+        fs::remove_dir_all(cache_path)
+            .with_context(|| format!("Failed to remove directory {}", cache_path.display()))?;
+    }
+    extractor::extract_to(exe_path, cache_path).with_context(|| {
+        format!(
+            "Failed to extract {} to {}",
+            exe_path.display(),
+            cache_path.display()
+        )
+    })
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<()> {
     if env::var("WARP_TRACE").is_ok() {
         simple_logger::init_with_level(Level::Trace)?;
     }
 
     let self_path = env::current_exe()?;
     let self_file_name = self_path.file_name().unwrap();
-    let cache_path = cache_path(&self_file_name.to_string_lossy());
+    let cache_path = cache_path(&self_file_name.to_string_lossy())?;
 
     trace!("self_path={:?}", self_path);
     trace!("self_file_name={:?}", self_file_name);

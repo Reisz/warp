@@ -1,3 +1,4 @@
+use anyhow::{anyhow, Context, Result};
 use flate2::read::GzDecoder;
 use log::trace;
 use memmem::{Searcher, TwoWaySearcher};
@@ -65,38 +66,27 @@ impl<'a> Iterator for FileSearcher<'a> {
 
 const GZIP_MAGIC: &[u8] = b"\x1f\x8b\x08";
 
-pub fn extract_to(src: &Path, dst: &Path) -> io::Result<()> {
-    let mut found = false;
-
-    let searcher = FileSearcher::new(src, GZIP_MAGIC)?;
-    for result in searcher {
-        let offs = result?;
-        if extract_at_offset(src, offs, dst).is_ok() {
+pub fn extract_to(src: &Path, dst: &Path) -> Result<()> {
+    FileSearcher::new(src, GZIP_MAGIC)
+        .context("failed searching own binary")?
+        .map(Result::unwrap)
+        .find(|offs| extract_at_offset(src, *offs, dst).unwrap())
+        .ok_or_else(|| anyhow!("No tarball found inside binary file {}", src.display()))
+        .map(|offs| {
             trace!(
                 "tarball found at offset {} was extracted successfully",
                 offs
             );
-            found = true;
-            break;
-        }
-    }
-
-    if found {
-        Ok(())
-    } else {
-        Err(io::Error::new(
-            io::ErrorKind::Other,
-            "no tarball found inside binary",
-        ))
-    }
+        })
 }
 
-fn extract_at_offset(src: &Path, offs: usize, dst: &Path) -> io::Result<()> {
-    let mut f = File::open(src)?;
-    f.seek(SeekFrom::Start(offs as u64))?;
+fn extract_at_offset(src: &Path, offs: usize, dst: &Path) -> Result<bool> {
+    let mut f = File::open(src)
+        .with_context(|| format!("Failed to open file to extract from: {}", src.display()))?;
+    f.seek(SeekFrom::Start(offs as u64))
+        .with_context(|| format!("Failed to read file to extract from: {}", src.display()))?;
 
     let gz = GzDecoder::new(f);
     let mut tar = Archive::new(gz);
-    tar.unpack(dst)?;
-    Ok(())
+    Ok(tar.unpack(dst).is_ok())
 }
