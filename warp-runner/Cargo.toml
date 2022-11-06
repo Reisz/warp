@@ -1,6 +1,6 @@
 [package]
 name = "warp-runner"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Diego Giagio <diego@giagio.com>"]
 edition = "2021"
 
@@ -12,4 +12,4 @@ tar = "0.4"
 dirs = "4.0"
 log = "0.4.5"
 remove_dir_all = "0.7"
-simple_logger = "1.0.1"
+simple_logger = "4.0"
