@@ -17,19 +17,21 @@ use warp_args::{bincode_options, Args, WARP_ARGS_MAGIC};
 
 use crate::cli::Command;
 
-const RUNNER_LINUX_X64: &[u8] =
-    include_bytes!("../../target/x86_64-unknown-linux-musl/release/warp-runner");
-const RUNNER_MACOS_X64: &[u8] =
-    include_bytes!("../../target/x86_64-apple-darwin/release/warp-runner");
-const RUNNER_WINDOWS_X64: &[u8] =
-    include_bytes!("../../target/x86_64-pc-windows-gnu/release/warp-runner.exe");
-
 lazy_static! {
     static ref RUNNER_BY_ARCH: HashMap<&'static str, &'static [u8]> = {
         let mut m = HashMap::new();
-        m.insert("linux-x64", RUNNER_LINUX_X64);
-        m.insert("macos-x64", RUNNER_MACOS_X64);
-        m.insert("windows-x64", RUNNER_WINDOWS_X64);
+        m.insert(
+            "linux-x64",
+            include_bytes!("../../target/x86_64-unknown-linux-musl/release/warp-runner").as_slice(),
+        );
+        m.insert(
+            "macos-x64",
+            include_bytes!("../../target/x86_64-apple-darwin/release/warp-runner").as_slice(),
+        );
+        m.insert(
+            "windows-x64",
+            include_bytes!("../../target/x86_64-pc-windows-gnu/release/warp-runner.exe").as_slice(),
+        );
         m
     };
 }
