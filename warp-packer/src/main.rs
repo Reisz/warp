@@ -20,7 +20,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 const RUNNER_MAGIC: &[u8] = b"tVQhhsFFlGGD3oWV4lEPST8I8FEPP54IM0q7daes4E1y3p2U2wlJRYmWmjPYfkhZ0PlT14Ls0j8fdDkoj33f2BlRJavLj3mWGibJsGt5uLAtrCDtvxikZ8UX2mQDCrgE\0";
 
 const RUNNER_LINUX_X64: &[u8] =
-    include_bytes!("../../target/x86_64-unknown-linux-gnu/release/warp-runner");
+    include_bytes!("../../target/x86_64-unknown-linux-musl/release/warp-runner");
 const RUNNER_MACOS_X64: &[u8] =
     include_bytes!("../../target/x86_64-apple-darwin/release/warp-runner");
 const RUNNER_WINDOWS_X64: &[u8] =
