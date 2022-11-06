@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Context, Result};
+use bincode::Options;
 use flate2::read::GzDecoder;
 use log::trace;
 use memmem::{Searcher, TwoWaySearcher};
@@ -7,6 +8,7 @@ use std::io;
 use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::path::Path;
 use tar::Archive;
+use warp_args::{bincode_options, Args, WARP_ARGS_MAGIC};
 
 struct FileSearcher<'a> {
     buf_reader: BufReader<File>,
@@ -89,4 +91,30 @@ fn extract_at_offset(src: &Path, offs: usize, dst: &Path) -> Result<bool> {
     let gz = GzDecoder::new(f);
     let mut tar = Archive::new(gz);
     Ok(tar.unpack(dst).is_ok())
+}
+
+pub fn get_args(src: &Path) -> Result<Args> {
+    FileSearcher::new(src, WARP_ARGS_MAGIC)
+        .context("failed searching own binary")?
+        .map(Result::unwrap)
+        .find_map(|offs| {
+            Some((
+                offs,
+                extract_args_at_offset(src, offs + WARP_ARGS_MAGIC.len()).unwrap()?,
+            ))
+        })
+        .ok_or_else(|| anyhow!("No arguments found inside binary file {}", src.display()))
+        .map(|(offs, args)| {
+            trace!("args found at offset {} was extracted successfully", offs);
+            args
+        })
+}
+
+fn extract_args_at_offset(src: &Path, offs: usize) -> Result<Option<Args>> {
+    let mut f = File::open(src)
+        .with_context(|| format!("Failed to open file to extract from: {}", src.display()))?;
+    f.seek(SeekFrom::Start(offs as u64))
+        .with_context(|| format!("Failed to read file to extract from: {}", src.display()))?;
+
+    Ok(bincode_options().deserialize_from(f).ok())
 }
